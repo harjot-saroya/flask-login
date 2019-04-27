@@ -1,0 +1,25 @@
+.content{
+	display: flex;
+	justify-content: space-around;
+}
+.input p{
+	display: inline-block;
+	margin-top:16px;
+	margin-bottom: 3px;
+
+}
+.input button{
+	margin: 0;
+
+}
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+th {
+  padding: 5px;
+}
+td {
+  padding: 5px;
+  background-color: white;
+}

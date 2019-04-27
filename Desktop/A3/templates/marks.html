@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Home Page</title>
+	<link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/marks.css') }}">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	<script>
+		function showandhide()
+		{
+			if(document.getElementById('rem').clicked == true){
+				document.getElementById('ins').style.display='none';
+			}
+			else{
+				document.getElementById('ins').style.display='block';
+			}
+		}
+	</script>
+</head>
+<body>
+
+	<a href="/homepage">Back</a>
+	<h1>Student Name:{{query[0][0]}}</h1>
+
+	<div class=content>
+
+		<div class=input>
+
+			<table>
+		      <tr>
+		        <th>ID</th>
+		        <th>Quiz 1</th>
+		        <th>Quiz 2</th>
+		        <th>Quiz 3</th>
+		      </tr>
+		      <tr>
+		      	<td>test</td>
+		      </tr>
+		    </table>
+
+
+		</div>
+	</div>
+
+
+</body>
+</html>
