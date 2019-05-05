@@ -1,0 +1,33 @@
+{% block body %}
+{% if session['logged_in'] %}
+
+	You're logged in already!
+
+
+	{% else %}
+	  {% with messages = get_flashed_messages() %}
+    	{% if messages %}
+      		<ul>
+       		{% for message in messages %}
+       			<li>{{ message }}</li>
+       		{% endfor %}
+      		</ul>
+    	{% endif %}
+   		{% endwith %}
+
+		<p>Login</p>
+		<form action = '/login' method="POST">
+			<input type='username' name = 'username' placeholder="Username">
+			<input type="password" name="password" placeholder="Password">
+			<input type="submit" value="Log in">
+		</form>
+		<p>Create new user</p>
+		<form action = '/create-user' method="POST">
+			<input type='username' name = 'username' placeholder="Enter new Username">
+			<input type="password" name="password" placeholder="Enter new Password">
+			<input type="radio" name="user_type" value="student">Student
+			<input type="radio" name="user_type" value="instructor"> Instructor
+			<input type="submit" value="Create Account">
+		</form>
+{% endif %}
+{% endblock %}

@@ -1,33 +1,11 @@
-
-from flask import Flask, render_template, request,flash,redirect,url_for,g
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager,UserMixin,login_user,login_required,logout_user,current_user
-from sqlalchemy.sql import text
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+# required imports
+# the sqlite3 library allows us to communicate with the sqlite database
 import sqlite3
-engine = create_engine('sqlite:///user_info.db', echo = True)
+# we are adding the import 'g' which will be used for the database
+from flask import Flask, flash, render_template, redirect, url_for, request, g, session
 
-app = Flask(__name__,)
-app.config['SQLALCHEMY_DATABASE_URI']= 'sqlite:///user_info.db'
-app.config['SECRET_KEY']='test'
+# the database file we are going to communicate with
 DATABASE = './user_info.db'
-db = SQLAlchemy(app)
-login_manager = LoginManager()
-login_manager.init_app(app)
-
-class User(UserMixin,db.Model):
-	id = db.Column(db.Integer, primary_key=True)
-	#30 character username/passwords where username is unqiue but passwords are not
-	username = db.Column(db.String(30),unique = True)
-	password = db.Column(db.String(30),unique = False)
-	user_type = db.Column(db.String(10),unique = False)
-
-	def __init__(self,usern,passw,inp_type):
-		# Pass in username/password variables into user object
-		self.username = usern
-		self.password = passw
-		self.user_type = inp_type
 
 # connects to the database
 def get_db():
@@ -39,119 +17,115 @@ def get_db():
     return db
 
 # converts the tuples from get_db() into dictionaries
+# (don't worry if you don't understand this code)
 def make_dicts(cursor, row):
     return dict((cursor.description[idx][0], value)
                 for idx, value in enumerate(row))
 
+# given a SELECT query, executes and returns the result
+# (don't worry if you don't understand this code)
 def query_db(query, args=(), one=False):
     cur = get_db().execute(query, args)
     rv = cur.fetchall()
     cur.close()
     return (rv[0] if rv else None) if one else rv
 
-@login_manager.user_loader
-def load_user(user_id):
-	return User.query.get(int(user_id))
+# tells Flask that "this" is the current running app
+app = Flask(__name__)
+app.config['SECRET_KEY']='test'
 
+# this function gets called when the Flask app shuts down
+# tears down the database connection
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        # close the database if we are connected to it
+        db.close()
 
 @app.route('/')
 def index():
-
-	if current_user.is_authenticated:
-		return render_template('homepage.html')
-	return render_template('login.html')
-
-@app.route('/login')
-def login():
-	return render_template('login.html')
+    return render_template('index.html')
 
 @app.route('/homepage')
 def homepage():
-	if current_user.is_authenticated:
-		return render_template('homepage.html')
-	return render_template('login.html')
+    return render_template('homepage.html')
 
-@app.route('/loginuser',methods = ['POST'])
-def loginuser():
-	username = request.form['username']
-	password = request.form['password']
-	user = User.query.filter_by(username=username).first()
-	if not user:
-		return '<h1>User not found!</h1>'
-	password = User.query.filter_by(password=password).first()
-	if not password:
-		flash('Incorrect password')
-		return render_template('login.html')
-	login_user(user)
-	if current_user.user_type =='student':
-		return render_template('homepage.html')
-	
-	return render_template('instruct_login.html')
+@app.route('/login', methods = ['GET','POST'])
+def login():
+    db = get_db()
+    db.row_factory = make_dicts
+    info = request.form
+    query = query_db('select * from user where username = ? and password = ?', [info['username'],info['password']], one = True)
+    found = False
+    db.close()
+    if (query):
+        found = True
+    else:
+        flash('Incorrect credentials')
+        flash('Please try again')
+        return redirect(url_for('index'))
+    if (found == True):
+        if (query['username'] != None):
+            if (query['password'] == info['password']):
+                session['username'] = info['username']
+                session['type'] = query['user_type']
+                return render_template('homepage.html',query = query)
+            else:
+                flash('Incorrect credentials')
+                return redirect(url_for('login'))
+    return redirect(url_for('login'))
+
+@app.route('/create-user', methods = ['GET','POST'])
+def newUser():
+    db = get_db()
+    db.row_factory = make_dicts
+    cur = db.cursor()
+    info = request.form
+    cur.execute('insert into user (username,password,user_type) values (?,?,?)', [info['username'],info['password'],info['user_type']])
+    db.commit()
+    cur.close()
+    flash('User was sucessfully created!')
+    flash('Please login')
+    return redirect(url_for('index'))
 
 
-@app.route('/createuser', methods = ['GET','POST'])
-def createuser():
-	# Retrieve input information
-	info = request.form
-	# Get database
-	db = get_db()
-	# Create database entires into dictionaries
-	db.row_factory = make_dicts
-	# Create cursor for database selection
-	cur = db.cursor()
-	# Using our information in info, insert this into their appropriate places in the table User
-	cur.execute('insert into user (username,password,user_type) values (?,?,?)',[info['username'],info['password'],info['user_type']])
-	db.commit()
-	cur.close()
-	# Display message of succesful account creation
-	flash('User was sucessfully created!')
-	flash('Please login')
-	return redirect(url_for('index'))
 @app.route('/logout')
-@login_required
+#@login_required
 def logout():
-	logout_user()
-	return redirect(url_for('login'))
+    session.pop('username', None)
+    session.pop('type', None)
+    return redirect(url_for('index'))
 
-@app.route('/home')
-@login_required
-def home():
-	return 'The current user is:' + current_user.username
-
-@app.route('/marks', methods = ['GET'])
-@login_required
+@app.route('/marks')
 def marks():
-	curr = "'" + str(current_user.username) + "'" 
-	conn = sqlite3.connect('user_info.db')
-	queryString = "SELECT * from marks WHERE username = " + curr
-	col = conn.execute("PRAGMA table_info(marks)").fetchall()
-	query = conn.execute(queryString).fetchall()
-	conn.close()
+    if(session['type'] == 'instructor'):
+        print('instructor')
+        return render_template('homepage.html')
+    user = session['username']
+    db = get_db()
+    db.row_factory = make_dicts
+    items = []
+    query = query_db('select * from marks where username = ?',[user], one = True)
+    items.append(query)
+    print(query)
+    db.close()
+    return render_template('marks.html',query = items)
 
+@app.route('/remark',methods = ['GET','POST'])
+def remark():
+    feedback = request.form
+    db = get_db()
+    db.row_factory = make_dicts
+    cur = db.cursor()
+    stuid = query_db('select id from user where username = ?',[session['username']],one = True)
+    print(stuid)
+    cur.execute('insert into remark (id,username,reason,evaluation) values (?,?,?,?)',[stuid['id'],session['username'],feedback['reason'],feedback['evaluation']])
+    db.commit()
+    cur.close()
+    flash('Remark request submitted!')
+    return redirect(url_for('marks'))
 
-	return render_template('marks.html',query=query,name = curr,columns=col)
-
-@app.route('/instruct_marks', methods = ['GET','POST'])
-@login_required
-def instruct_marks():
-	curr = "'" + str(current_user.username) + "'" 
-	conn = sqlite3.connect('user_info.db')
-	queryString = "SELECT * from marks"
-	col = conn.execute("PRAGMA table_info(marks)").fetchall()
-	query = conn.execute(queryString).fetchall()
-	conn.close()
-
-
-	return render_template('marks.html',query=query,name = curr,columns=col)
-
-@app.route('/feedback',methods = ['GET','POST'])
-@login_required
-def create_post():
-	info = request.form['feedback_1']
-	conn = sqlite.connect('user_info.db')
-	queryString = c.execute("INSERT INTO {feedback} ({feedback1}) VALUES (info)")
-	return render_template('feedback.html')
-
-
+# run the app when app.py is run
 if __name__ == '__main__':
-	app.run(debug=True)
+    app.run(debug=True)
