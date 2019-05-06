@@ -1,0 +1,50 @@
+{% with messages = get_flashed_messages() %}
+    	{% if messages %}
+      		<ul>
+       		{% for message in messages %}
+       			<li>{{ message }}</li>
+       		{% endfor %}
+      		</ul>
+    	{% endif %}
+   		{% endwith %}
+
+
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/style.css') }}">
+</head>
+<body>
+	<h1><u>List of instructors for this course</u></h1>
+	<div class = items>
+		<div class = table>
+			<table align="center">
+				<tr>
+				<th>ID</th>
+				<th>Instructor</th>
+				</tr>
+			{% for item in items %}
+				<tr>
+					<td>{{item['id']}}</td>
+					<td>{{item['username']}}</td>
+				</tr>
+			{% endfor %}
+
+			</table>
+		</div>
+		<div class = 'form'>
+			<form action = '/create-feedback' method="POST" id = usrform>
+			<p> <u>Please enter the username of the instructor from the list above:</u></p>
+			<input type='text' name = 'user' placeholder="Username">
+			<p><u>Please enter your feedback:</u></p>
+			<textarea rows="4" cols="50" name="comment" placeholder="Enter feedback">
+			</textarea>
+			<input type="submit" value="Submit feedback">
+		</form>
+		
+		</div>
+	</div>
+
+</body>
+</html>

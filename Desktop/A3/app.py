@@ -108,7 +108,6 @@ def marks():
     items = []
     query = query_db('select * from marks where username = ?',[user], one = True)
     items.append(query)
-    print(query)
     db.close()
     return render_template('marks.html',query = items)
 
@@ -119,12 +118,41 @@ def remark():
     db.row_factory = make_dicts
     cur = db.cursor()
     stuid = query_db('select id from user where username = ?',[session['username']],one = True)
-    print(stuid)
     cur.execute('insert into remark (id,username,reason,evaluation) values (?,?,?,?)',[stuid['id'],session['username'],feedback['reason'],feedback['evaluation']])
     db.commit()
     cur.close()
     flash('Remark request submitted!')
     return redirect(url_for('marks'))
+
+@app.route('/feedback', methods = ['GET','POST'])
+def feedback():
+    if (session['type'] == 'student'):
+        db = get_db()
+        db.row_factory = make_dicts
+        items = []
+        query = query_db('select id,username from user where user_type = ?',['instructor'])
+        items = query
+        return render_template('instructor_select.html',items = items)
+    return redirect(url_for('homepage'))
+@app.route('/create-feedback', methods = ['GET','POST'])
+def create():
+        db = get_db()
+        db.row_factory = make_dicts
+        query = query_db('select username from user where user_type = ?', ['instructor'])
+        cur = db.cursor()
+        feedback = request.form
+        for item in query:
+            if (feedback['user'] == item['username']):
+                print(feedback)
+                cur.execute('insert into feedback (username,comment) values (?,?)',[feedback['user'],feedback['comment']])
+                db.commit()
+                cur.close()
+                flash('Feedback sucessfully created!')
+                return redirect(url_for('feedback'))
+        
+        flash('This instructor does not exist!')
+        return redirect(url_for('feedback'))
+
 
 # run the app when app.py is run
 if __name__ == '__main__':

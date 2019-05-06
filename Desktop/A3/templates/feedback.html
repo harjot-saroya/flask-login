@@ -5,10 +5,26 @@
 
 
 	{% else %}
-		<form action = '/feedback' method="POST">
-			<input type='feedback1' name = 'feedback_1' placeholder="How do you feel about the course">
-			<input type="password" name="password" placeholder="Password">
-			<input type="submit" value="Log in">
-		</form>
+
 {% endif %}
 {% endblock %}
+
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+</head>
+<body>
+	<h3>Greetings {{session['username']}}</h3>
+	<a href="/homepage">Back</a>
+
+		<form action = '/feedback' method="POST">
+			<p>How do you feel about this course?</p>
+			<input type='feedback1' name = 'feedback_1' placeholder="Feedback">
+			<p>How can we improve?</p>
+			<input type="password" name="password" placeholder="Password">
+			<input type="submit" value="Submit">
+		</form>
+
+</body>
+</html>
