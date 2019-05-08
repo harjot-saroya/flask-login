@@ -1,0 +1,68 @@
+
+{% with messages = get_flashed_messages() %}
+    	{% if messages %}
+      		<ul>
+       		{% for message in messages %}
+       			<li>{{ message }}</li>
+       		{% endfor %}
+      		</ul>
+    	{% endif %}
+   		{% endwith %}
+
+
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Home Page</title>
+	<link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/marks.css') }}">
+
+	<script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.3.1.min.js"></script>
+
+</head>
+<body>
+
+	<a href="/homepage">Back</a>
+	<h1>Student name: {{name}}</h1>
+	<div class = 'content'>
+
+		<div class=input>
+			<h2> <u>Term Marks</u> </h2>
+			<table>
+		      <tr>
+		        <th>ID</th>
+		        <th>Quiz 1</th>
+		        <th>Quiz 2</th>
+		        <th>Quiz 3</th>
+		      </tr>
+		      <tr>
+		      	{% for item in items %}
+		      		<td>{{item['id']}}</td>
+		      		<td>{{item['quiz1']}}
+					</td>
+		      		<td>{{item['quiz2']}}
+		      		</td>
+		      		<td>{{item['quiz3']}}</td>
+		      	{% endfor %}
+
+		      </tr>
+		    </table>
+		 </div>
+		    <div class = appeal>
+		    	<h3><u>Edit Mark</u></h3>
+		      		
+		      	<form action = '/editmark' method="POST">
+				<input type='text' name = 'grade' placeholder="Enter Grade">
+				<input type="radio" name="evaluation" value="quiz1">quiz1
+				<input type="radio" name="evaluation" value="quiz2"> quiz2
+				<input type="radio" name="evaluation" value="quiz3"> quiz3
+				<input type="submit" value="Edit mark">
+
+				</form>
+			</div>
+
+		
+	</div>
+
+
+</body>
+</html>

@@ -1,0 +1,57 @@
+
+{% with messages = get_flashed_messages() %}
+    	{% if messages %}
+      		<ul>
+       		{% for message in messages %}
+       			<li>{{ message }}</li>
+       		{% endfor %}
+      		</ul>
+    	{% endif %}
+   		{% endwith %}
+
+
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Home Page</title>
+	<link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='styles/marks.css') }}">
+
+	<script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.3.1.min.js"></script>
+
+</head>
+<body>
+
+	<a href="/homepage">Back</a>
+	<h1>Welcome {{session['username']}}</h1>
+	<div class = 'content'>
+
+		<div class=input>
+			<h2> <u>List of students</u> </h2>
+			<table>
+		      <tr>
+		        <th>ID</th>
+		        <th>Username</th>
+
+		      </tr>
+		      	{% for item in items %}
+		      	<tr>
+		      		<td>{{item['id']}}</td>
+		      		<td>{{item['username']}}</td>
+		      	</tr>
+		      	{% endfor %}
+
+		    </table>
+		 </div>
+		    <div class = appeal>
+		    	<h3><u>Enter student name to access their mark:</u></h3>
+		      		
+		      	<form action = '/viewmark' method="POST">
+				<input type='text' name = 'user' placeholder="Enter student name">
+				<input type="submit" value="Submit">
+			</div>
+
+	</div>
+
+
+</body>
+</html>

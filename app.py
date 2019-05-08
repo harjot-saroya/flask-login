@@ -100,8 +100,11 @@ def logout():
 @app.route('/marks')
 def marks():
     if(session['type'] == 'instructor'):
-        print('instructor')
-        return render_template('homepage.html')
+        db = get_db()
+        db.row_factory = make_dicts
+        query = query_db('select id,username from user where user_type = ?',['student'])
+        db.close()
+        return render_template('studentlist.html',items = query)
     user = session['username']
     db = get_db()
     db.row_factory = make_dicts
@@ -111,45 +114,107 @@ def marks():
     db.close()
     return render_template('marks.html',query = items)
 
+@app.route('/viewmark', methods = ['GET','POST'])
+def viewmark():
+    db = get_db()
+    db.row_factory = make_dicts
+    student = request.form
+    session['student'] = student['user']
+    query = query_db('select * from marks where username = ?',[student['user']])
+    return render_template('editmarks.html',items = query,name = student['user'])
+
+@app.route('/editmark', methods = ['GET','POST'])
+def editmark():
+    db = get_db()
+    db.row_factory = make_dicts
+    form = request.form
+    print('1')
+    print(form)
+    cur = db.cursor()
+    evaluation = form['evaluation']
+    grade = form['grade']
+
+    if (evaluation == 'quiz1'):
+        cur.execute('update marks set quiz1 = ? where username = ?',(grade,session['student']))
+        db.commit()
+        flash('Mark sucessfully updated')
+        return redirect(url_for('marks'))
+    elif (evaluation == 'quiz2'):
+        cur.execute('update marks set quiz2 = ? where username = ?',(grade,session['student']))
+        flash('Mark sucessfully updated')
+        db.commit()
+        return redirect(url_for('marks'))
+    elif( evaluation == 'quiz3'):
+        cur.execute('update marks set quiz3 = ? where username = ?',(grade,session['student']))
+        flash('Mark sucessfully updated')
+        db.commit()
+        return redirect(url_for('marks'))
+    else:
+        flash('ERROR: This evaluation does not exists')
+        return redirect(url_for('marks'))
+    db.close()
+    cur.close()
+    return redirect(url_for('marks'))
+
+
 @app.route('/remark',methods = ['GET','POST'])
 def remark():
+    # Get information from the student via form
     feedback = request.form
     db = get_db()
     db.row_factory = make_dicts
     cur = db.cursor()
+    # Query the user database for the id of the student who is currently logged int
     stuid = query_db('select id from user where username = ?',[session['username']],one = True)
+    # Create an entry in the remark
     cur.execute('insert into remark (id,username,reason,evaluation) values (?,?,?,?)',[stuid['id'],session['username'],feedback['reason'],feedback['evaluation']])
     db.commit()
     cur.close()
+    # Flash that the remark request was submitted
     flash('Remark request submitted!')
     return redirect(url_for('marks'))
 
 @app.route('/feedback', methods = ['GET','POST'])
 def feedback():
+    # Check if current user is a student
     if (session['type'] == 'student'):
         db = get_db()
         db.row_factory = make_dicts
-        items = []
+        # Get id and username of all instructors in the database
         query = query_db('select id,username from user where user_type = ?',['instructor'])
         items = query
+        # Send this info to our html file for display
         return render_template('instructor_select.html',items = items)
-    return redirect(url_for('homepage'))
+    # If our current user is an instructor
+    db = get_db()
+    db.row_factory = make_dicts
+    # Get the username of the instructor currently on the session
+    user = session['username']
+    # Get the comments for the currently logged in instructor
+    query = query_db('select comment from feedback where username = ?',[user])
+    db.close()
+    return render_template('instruct_comment.html',items = query)
 @app.route('/create-feedback', methods = ['GET','POST'])
-def create():
+def create_feedback():
         db = get_db()
         db.row_factory = make_dicts
+        # Get usernames of all instructors in the database
         query = query_db('select username from user where user_type = ?', ['instructor'])
         cur = db.cursor()
+        # Get information about a specific instructor from student
         feedback = request.form
+        print(feedback)
+
+        # Loop through instructors to find the instructor the student specified
         for item in query:
             if (feedback['user'] == item['username']):
-                print(feedback)
+                # If this instructor exists, insert the user's comment and instructor they chose into the feedback sql table
                 cur.execute('insert into feedback (username,comment) values (?,?)',[feedback['user'],feedback['comment']])
                 db.commit()
                 cur.close()
                 flash('Feedback sucessfully created!')
                 return redirect(url_for('feedback'))
-        
+        # If user does not exist, flash this and redirect to feedback screen
         flash('This instructor does not exist!')
         return redirect(url_for('feedback'))
 
